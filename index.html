@@ -1020,22 +1020,24 @@ async function doGenerate(){
         'Authorization':'Bearer sk-kejoybpsdagkhoghyxtoiaunlbmmatspdlqarxntkpiwiymk'
       },
       body:JSON.stringify({
-        model:'stabilityai/stable-diffusion-3-5-large-turbo',
+        model:'Pro/black-forest-labs/FLUX.1-schnell',
         prompt: positive,
-        negative_prompt: negative,
         image_size:'1024x1024',
         num_inference_steps:4,
-        num_images:1,
-        guidance_scale:1
+        num_images:1
       })
     });
 
     const data = await resp.json();
     clearInterval(iv);
 
+    console.log('API完整返回:', JSON.stringify(data));
     /* 检查返回结构 */
     const imgUrl = data?.images?.[0]?.url;
-    if(!imgUrl) throw new Error(data?.message||'未获取到图片');
+    if(!imgUrl){
+      const errMsg = data?.message || data?.error?.message || JSON.stringify(data);
+      throw new Error(errMsg);
+    }
 
     /* 进度条跑满 */
     const pf=document.getElementById('pgf');
