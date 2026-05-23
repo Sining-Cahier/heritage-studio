@@ -1020,12 +1020,13 @@ async function doGenerate(){
         'Authorization':'Bearer sk-kejoybpsdagkhoghyxtoiaunlbmmatspdlqarxntkpiwiymk'
       },
       body:JSON.stringify({
-        model:'Tongyi-MAI/Z-Image-Turbo',
+        model:'Kwai-Kolors/Kolors',
         prompt: positive,
+        negative_prompt: negative,
         image_size:'1024x1024',
-        num_inference_steps:8,
-        num_images:1,
-        guidance_scale:3.5
+        batch_size:1,
+        num_inference_steps:20,
+        guidance_scale:7.5
       })
     });
 
