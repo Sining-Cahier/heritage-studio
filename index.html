@@ -1161,49 +1161,46 @@ function refreshSummary(){
 /* ── GENERATE ── */
 
 /* ── Kimi 一体化润色：主体物 + 参数理解 + prompt优化，每次全新无状态单轮 ── */
-async function kimiEnrichPrompt(rawPrompt, rawEl, style, params){
-  // 将参数转为人类可读描述，明确告知Kimi
-  const traditionDesc = params.tradition >= 80 ? '极高（完全传统风貌）'
-    : params.tradition >= 55 ? '较高（传统为主）'
-    : params.tradition >= 35 ? '中等（传统现代各半）'
-    : '较低（现代设计为主）';
-  const satDesc = params.saturation >= 80 ? '极高（浓烈鲜艳）'
-    : params.saturation >= 55 ? '较高（色彩饱满）'
-    : params.saturation >= 35 ? '中等（典雅克制）'
+async function kimiOncePrompt(rawEl, style, patterns, product, activeParams, sketchBase64){
+  // 参数语义描述
+  const satDesc = activeParams.saturation >= 80 ? '极高（浓烈鲜艳）'
+    : activeParams.saturation >= 55 ? '较高（色彩饱满）'
+    : activeParams.saturation >= 35 ? '中等（典雅克制）'
     : '极低（近乎单色/水墨素雅）';
-  const densityDesc = params.density >= 80 ? '极密（满铺无留白）'
-    : params.density >= 55 ? '中密（疏密有致）'
-    : params.density >= 35 ? '稀疏（大量留白）'
+  const traditionDesc = activeParams.tradition >= 80 ? '极高（完全传统风貌）'
+    : activeParams.tradition >= 55 ? '较高（传统为主）'
+    : activeParams.tradition >= 35 ? '中等（传统现代各半）'
+    : '较低（现代设计为主）';
+  const densityDesc = activeParams.density >= 80 ? '极密（满铺无留白）'
+    : activeParams.density >= 55 ? '中密（疏密有致）'
+    : activeParams.density >= 35 ? '稀疏（大量留白）'
     : '极简（仅点缀）';
-  const modernDesc = params.modern >= 75 ? '极高（几何解构/当代设计语言）'
-    : params.modern >= 50 ? '较高（传统元素现代化提炼）'
-    : params.modern >= 25 ? '较低（轻微现代调整）'
-    : '无（纯粹传统，拒绝任何现代改良）';
+  const modernDesc = activeParams.modern >= 75 ? '极高（几何解构/当代设计）'
+    : activeParams.modern >= 50 ? '较高（传统元素现代化）'
+    : activeParams.modern >= 25 ? '较低（轻微现代调整）'
+    : '无（纯粹传统）';
 
-  // 随机盐值，强制每次对话独立，避免模型走捷径复用
-  const salt = Math.random().toString(36).slice(2,8) + Date.now().toString(36);
+  const salt = Math.random().toString(36).slice(2,7) + Date.now().toString(36).slice(-4);
 
-  const systemPrompt = `你是非遗文创AI图像提示词专家（本轮ID:${salt}）。
-你将收到一段基础提示词和用户的四项创作参数，任务是输出一段优化后的英文图像生成提示词。
+  const systemText = `你是非遗文创AI图像提示词专家（ID:${salt}）。
+任务：直接输出一段用于文生图的中文提示词，120字以内，无解释无标点多余。
 
-【严格要求】
-1. 必须根据四项参数数值调整描述，参数是用户明确的创作意图，不可忽视
-2. 对主体物"${rawEl}"添加具体生动的非遗美学动态描述（姿态/光影/细节），且每次必须不同
-3. 直接输出优化后的中文提示词，不要任何解释、序号、引号
-4. 色彩描述必须严格匹配饱和度参数——饱和度低则用"低饱和、哑光、灰调、素雅"等词，高则用"浓烈、鲜艳、饱和"
-5. 纹样密度低则强调"大面积留白、疏朗"，高则强调"满铺、繁复"
-6. 现代融合度高则加入"几何、解构、极简线条"，低则强调"古法、传统工艺原貌"
-7. 长度控制在120字以内`;
+规则：
+1. 以"${rawEl}"为主体，加入生动的非遗美学动态细节（姿态/纹理/光影），每次必须不同
+2. 融合${patterns}纹样，流派${style}
+3. 严格按参数调整：
+   - 色彩饱和度${activeParams.saturation}/100（${satDesc}）→ 低则写"低饱和哑光素雅"，高则写"浓烈鲜艳饱和"
+   - 传统强度${activeParams.tradition}/100（${traditionDesc}）
+   - 纹样密度${activeParams.density}/100（${densityDesc}）→ 低则写"大面积留白疏朗"，高则写"满铺繁复"
+   - 现代融合${activeParams.modern}/100（${modernDesc}）→ 高则加"几何解构极简"，低则"古法传统"
+4. 包含${product}产品材质质感描述
+5. ${sketchBase64 ? '根据草图中红色/蓝色区域描述主体和纹样的位置布局' : '构图自由发挥'}`;
 
-  const userPrompt = `基础提示词：${rawPrompt}
-
-用户四项参数：
-- 传统风格强度：${params.tradition}/100（${traditionDesc}）
-- 色彩饱和度：${params.saturation}/100（${satDesc}）
-- 纹样密度：${params.density}/100（${densityDesc}）
-- 现代融合度：${params.modern}/100（${modernDesc}）
-
-请基于以上参数，输出优化后的图像生成提示词：`;
+  // 构建消息内容
+  const userContent = sketchBase64
+    ? [{type:'image_url', image_url:{url:'data:image/png;base64,'+sketchBase64}},
+       {type:'text', text:'请根据草图布局和以上规则，直接输出提示词：'}]
+    : [{type:'text', text:'请根据以上规则，直接输出提示词：'}];
 
   try{
     const resp = await fetch('https://api.siliconflow.cn/v1/chat/completions',{
@@ -1211,138 +1208,18 @@ async function kimiEnrichPrompt(rawPrompt, rawEl, style, params){
       headers:{'Content-Type':'application/json','Authorization':'Bearer sk-aktjrrercjksuauhsuzronvcfidafafxxyuxiuuigpdcixcm'},
       body: JSON.stringify({
         model:'Pro/moonshotai/Kimi-K2.6',
-        messages:[
-          {role:'system', content: systemPrompt},
-          {role:'user',   content: userPrompt}
-        ],
-        max_tokens:200,
-        temperature:0.92,
-        top_p:0.95
+        messages:[{role:'system',content:systemText},{role:'user',content:userContent}],
+        max_tokens:180, temperature:0.92, top_p:0.95
       })
     });
     const data = await resp.json();
     const result = data?.choices?.[0]?.message?.content?.trim();
-    console.log('[Kimi优化结果]', result);
     if(result && !data?.code && result.length > 10) return result;
-    return rawPrompt; // 失败则回退
-  }catch(e){
-    console.warn('[Kimi调用失败]', e.message);
-    return rawPrompt;
-  }
+  }catch(e){ console.warn('[Kimi失败]', e.message); }
+  // 失败时本地fallback
+  return `${style}非遗文创风格，以${rawEl}为核心视觉主体，融合${patterns}传统纹样，设计一张${product}产品图，工艺精湛，高清细节。`;
 }
 
-/* ── 参数驱动基础风格词（本地生成，作为给Kimi的基础底稿）── */
-function buildStyleClause(params){
-  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-  const t = params.tradition;
-  const sat = params.saturation;
-  const den = params.density;
-  const mod = params.modern;
-
-  let traditionWord;
-  if(t >= 80)      traditionWord = pick(['严格遵循传统非遗典范，古朴正宗，原汁原味','高度还原历史经典样式，纹样考究，匠心传承']);
-  else if(t >= 55) traditionWord = pick(['传统韵味为主，局部加以提炼','保留非遗核心纹样，略作现代简化']);
-  else if(t >= 35) traditionWord = pick(['传统与现代各半，兼容并蓄','古典元素经过现代设计语言重新诠释']);
-  else             traditionWord = pick(['以现代设计为主框架，点缀非遗元素','极简现代感，仅保留传统纹样点睛之笔']);
-
-  let satWord;
-  if(sat >= 80)      satWord = pick(['色彩浓烈鲜艳，热烈奔放','饱和度极高，色调张扬华丽']);
-  else if(sat >= 55) satWord = pick(['色彩饱满明亮，层次丰富','色调鲜活，对比适中']);
-  else if(sat >= 35) satWord = pick(['色调典雅低饱和，含蓄内敛','雅致灰调，色彩克制']);
-  else               satWord = pick(['近乎单色调，水墨素雅，色彩极度克制','灰白哑光，几乎无彩色，素净如宣纸']);
-
-  let densityWord;
-  if(den >= 80)      densityWord = pick(['纹样铺满，繁复华丽，密不透风','满铺四方连续纹，纹样高密度覆盖']);
-  else if(den >= 55) densityWord = pick(['纹样中等密度，主次分明','装饰纹样适中，疏密有致']);
-  else if(den >= 35) densityWord = pick(['纹样稀疏，留白丰富，呼吸感强','点缀式纹样，大量留白，禅意疏朗']);
-  else               densityWord = pick(['极简纹样，仅关键处点缀一二','大面积素底，纹样极度克制']);
-
-  let modernWord;
-  if(mod >= 75)      modernWord = pick(['融入大量现代设计语言：极简线条、几何解构、扁平化','当代设计感强，色块几何与传统纹样并置']);
-  else if(mod >= 50) modernWord = pick(['适度融入现代排版与构成感','传统纹样经过现代几何化提炼']);
-  else if(mod >= 25) modernWord = pick(['以传统为主，仅在细节融入当代审美','保持传统工艺质感，微调现代比例']);
-  else               modernWord = pick(['纯粹传统工艺美学，不添加任何现代设计元素','完全复原经典非遗样式，拒绝现代改良']);
-
-  return [traditionWord, satWord, densityWord, modernWord].join('，') + '，';
-}
-
-/* ── Prompt 组装（先本地组装基础版，再交Kimi整体优化）── */
-async function buildPrompt(layoutDesc){
-  const rawEl   = S.text || '传统图案';
-  const style    = S.style || '非遗';
-  const patterns = S.patterns.join('、') || '传统纹样';
-  const product  = S.product || '产品';
-
-  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-
-  // ── Step 1: 确定本次使用的参数（用户调过则用真实值，否则随机）──
-  const activeParams = S.params.touched ? {...S.params} : {
-    tradition:  Math.floor(Math.random()*101),
-    saturation: Math.floor(Math.random()*101),
-    density:    Math.floor(Math.random()*101),
-    modern:     Math.floor(Math.random()*101),
-  };
-
-  // ── Step 2: 本地组装基础 Prompt ──
-  const colorMap = {
-    '敦煌纹样': ['赭石红、石青、土黄、金箔色、朱砂橙','矿物石绿、藏青、赭石、暖金、珊瑚红','朱砂、石青蓝、土黄、黑墨、银白'],
-    '非遗蜡染': ['靛蓝、冰裂白、深藏青、灰蓝、月白','深蓝、浅蓝、白底蓝纹、冰裂纹蓝白','钴蓝、牛仔蓝、白、浅灰蓝'],
-    '非遗剪纸': ['大红、朱砂红、金黄点缀、黑底金纹','中国红、黑墨、金色、深红','鲜红、橙红、镂空白底'],
-    '传统刺绣': ['胭脂红、翡翠绿、宝蓝、鹅黄、紫罗兰','玫红、孔雀蓝、翠绿、杏黄、银线','桃粉、湖蓝、草绿、浅金、象牙白'],
-    '传统水墨': ['墨黑、宣纸米白、淡墨灰、浅赭、朱砂点缀','浓墨、枯墨飞白、淡墨晕染、米黄','水墨深灰、留白、淡花青、朱膘'],
-    '非遗皮影': ['黑底金纹、朱红、深棕、琥珀黄','黑色镂空、金色描边、棕红','深黑、暖金、朱砂红、牛皮棕'],
-  };
-  const colorOptions = colorMap[style] || [style+'传统色系、金色点缀', style+'古典配色'];
-  const colorPalette = pick(colorOptions);
-
-  const productRenderMap = {
-    '丝巾':  ['真丝质感，轻薄飘逸，柔滑光泽，织物纱线肌理清晰','缎面丝光反射，薄透飘动感，边缘卷曲自然'],
-    '手提袋': ['帆布材质，立体挺括结构，缝线针脚清晰','皮革质感，光滑反光，金属扣件细节，立体成型'],
-    '扇子':  ['折扇完全展开，扇骨弧线优美，折叠纹路细腻可见','团扇圆润，绢面质感，细竹骨架，流苏点缀'],
-    '夜灯':  ['暖光从内透出，磨砂玻璃柔光散射，光晕温馨','陶瓷灯体，镂空纹样透光，灯光与纹样交相辉映'],
-    '马克杯': ['光滑陶瓷釉面，杯体饱满圆润，镜面反光细节','哑光陶土质感，手工拉坯纹理，温润朴拙'],
-    '抱枕':  ['布艺刺绣质感，柔软蓬松饱满，针脚肌理细腻','丝绒面料，光泽丰盈，纹样立体感强'],
-  };
-  const renderOptions = productRenderMap[product] || ['产品质感细腻，工艺精湛','高端文创产品，材质考究'];
-  const productRender = pick(renderOptions);
-
-  const lightPool = ['柔和自然侧光，层次分明','暖金棚拍灯光，质感醇厚','博物馆射灯光，主体突出','漫射柔光，色彩饱满','晨光暖调，温润典雅'];
-  const light = pick(lightPool);
-
-  const qualityPool = ['商业级产品摄影，超高清细节，8K','专业摄影棚拍，锐利细节，高动态范围','杂志级产品图，精致质感，高保真','博物馆文物级别呈现，细节丰富，专业布光'];
-  const quality = pick(qualityPool);
-
-  const styleClause = buildStyleClause(activeParams);
-  const layoutClause = layoutDesc ? layoutDesc + '，' : '';
-
-  const basePrompt = [
-    style + '非遗文创风格，',
-    '以' + rawEl + '为核心视觉主体，',
-    '融合' + patterns + '传统纹样，',
-    layoutClause,
-    styleClause,
-    productRender + '，',
-    '色彩精准使用' + colorPalette + '，',
-    light + '，',
-    '设计一张' + product + '产品图，',
-    quality + '，单件产品完整清晰展示。',
-  ].join('');
-
-  // ── Step 3: 交给Kimi整体优化（全新单轮，无历史记忆）──
-  const optimized = await kimiEnrichPrompt(basePrompt, rawEl, style, activeParams);
-
-  const negative = [
-    '低质量，模糊，噪点，失真，变形，',
-    '文字，水印，logo，签名，',
-    '卡通风格，漫画风，儿童插画，',
-    '多个产品，重复图案拼贴，',
-    '过度曝光，过度锐化，色彩失真，',
-  ].join('');
-
-  S.currentSeed = Math.floor(Math.random() * 2147483647);
-  console.log('[最终Prompt→生图]', optimized);
-  return {positive: optimized, negative};
-}
 
 /* ── 参数驱动风格词生成 ── */
 
@@ -1365,21 +1242,26 @@ async function doGenerate(){
     if(pf)pf.style.width=Math.round(prog)+'%';
   },800);
 
-  /* 第一步：有草图则用 Kimi 读懂布局 */
-  let layoutDesc=null;
-  if(S.sketch){
-    const pt=document.getElementById('progTxt');
-    if(pt)pt.innerHTML='正在解读您的布局草图…<br><span style="font-size:10px;opacity:0.6">Kimi视觉模型分析中</span>';
-    layoutDesc=await analyzeSketch(S.sketch);
-    console.log('Kimi布局描述:', layoutDesc);
-    if(pt)pt.innerHTML='正在凝聚「'+S.style+' · '+S.product+'」<br><span style="font-size:10px;opacity:0.6">AI图像生成中，请稍候</span>';
-  }
+  /* 准备参数 */
+  const activeParams = S.params.touched ? {...S.params} : {
+    tradition: Math.floor(Math.random()*101),
+    saturation: Math.floor(Math.random()*101),
+    density: Math.floor(Math.random()*101),
+    modern: Math.floor(Math.random()*101),
+  };
+  S.currentSeed = Math.floor(Math.random() * 2147483647);
 
-  /* 第二步：Kimi 润色主体物 + 组装 Prompt */
-  const pt2=document.getElementById('progTxt');
-  if(pt2)pt2.innerHTML='正在为「'+(S.text||'主体物')+'」注入非遗神韵…<br><span style="font-size:10px;opacity:0.6">Kimi正在润色创作提示词</span>';
-  const {positive,negative}=await buildPrompt(layoutDesc);
-  console.log('FINAL PROMPT:', positive);
+  /* 一次 Kimi 调用：草图分析 + 主体物润色 + 参数风格 全部完成 */
+  const pt=document.getElementById('progTxt');
+  if(pt)pt.innerHTML='正在生成专属提示词…<br><span style="font-size:10px;opacity:0.6">Kimi创作中，稍等片刻</span>';
+  const finalPositive = await kimiOncePrompt(
+    S.text||'传统图案', S.style||'非遗', S.patterns.join('、')||'传统纹样',
+    S.product||'产品', activeParams, S.sketch||null
+  );
+  if(pt)pt.innerHTML='提示词就绪，正在生成作品…<br><span style="font-size:10px;opacity:0.6">AI图像生成约需15-20秒</span>';
+  console.log('FINAL PROMPT:', finalPositive);
+
+  const negative = '低质量，模糊，噪点，失真，变形，文字，水印，卡通风格，多个产品，过度曝光，色彩失真，';
 
   /* 第三步：文生图 */
   try{
@@ -1388,7 +1270,7 @@ async function doGenerate(){
       headers:{'Content-Type':'application/json','Authorization':'Bearer sk-aktjrrercjksuauhsuzronvcfidafafxxyuxiuuigpdcixcm'},
       body:JSON.stringify({
         model:'Tongyi-MAI/Z-Image-Turbo',
-        prompt:positive,
+        prompt:finalPositive,
         negative_prompt:negative,
         image_size:'1024x1024',
         num_inference_steps:25,
