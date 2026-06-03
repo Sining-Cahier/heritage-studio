@@ -507,6 +507,70 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 .pub-success-box{text-align:center;padding:32px 24px;}
 .extract-hint{font-size:10px;color:var(--jade);background:rgba(42,107,85,0.08);border:0.5px solid rgba(42,107,85,0.2);border-radius:6px;padding:6px 10px;display:flex;align-items:center;gap:5px;}
 
+
+/* ══ 新建创作按钮 ══ */
+.new-work-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:20px;
+  border:1.5px solid rgba(201,151,58,0.45);
+  background:rgba(201,151,58,0.07);
+  color:var(--gold);font-size:11px;font-family:'Noto Serif SC',serif;
+  cursor:pointer;letter-spacing:0.5px;transition:all 0.22s;
+  white-space:nowrap;
+}
+.new-work-btn:hover{background:var(--gold);color:#1A1208;border-color:var(--gold);}
+.new-work-btn i{font-size:13px;}
+
+/* ══ 历史记录区域 ══ */
+.history-card{
+  background:var(--paper);border-radius:var(--r);
+  box-shadow:0 4px 16px rgba(26,18,8,0.08);overflow:hidden;
+}
+.history-hd{
+  display:flex;align-items:center;padding:10px 14px;
+  border-bottom:0.5px solid rgba(201,151,58,0.12);gap:8px;
+}
+.history-hd-title{font-family:'Noto Serif SC',serif;font-size:12px;color:var(--ink-soft);font-weight:600;}
+.history-count{font-size:10px;color:rgba(42,46,40,0.38);margin-left:auto;}
+.history-empty{
+  padding:22px 16px;text-align:center;
+  font-size:11px;color:rgba(42,46,40,0.32);font-style:italic;line-height:1.8;
+}
+.history-list{
+  display:flex;flex-direction:column;gap:0;
+  max-height:260px;overflow-y:auto;
+}
+.history-list::-webkit-scrollbar{width:3px;}
+.history-list::-webkit-scrollbar-track{background:transparent;}
+.history-list::-webkit-scrollbar-thumb{background:rgba(201,151,58,0.25);border-radius:2px;}
+.hist-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 14px;cursor:pointer;transition:background 0.16s;
+  border-bottom:0.5px solid rgba(201,151,58,0.07);
+  position:relative;
+}
+.hist-item:last-child{border-bottom:none;}
+.hist-item:hover{background:rgba(201,151,58,0.06);}
+.hist-thumb{
+  width:42px;height:42px;border-radius:6px;overflow:hidden;flex-shrink:0;
+  background:var(--paper-mid);border:0.5px solid rgba(201,151,58,0.2);
+  display:flex;align-items:center;justify-content:center;
+}
+.hist-thumb img{width:100%;height:100%;object-fit:cover;}
+.hist-info{flex:1;min-width:0;}
+.hist-title{font-size:11px;font-weight:500;color:var(--ink-soft);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-family:'Noto Serif SC',serif;margin-bottom:3px;}
+.hist-tags{display:flex;gap:4px;flex-wrap:wrap;}
+.hist-tag{font-size:9px;padding:1px 6px;border-radius:6px;
+  background:rgba(201,151,58,0.1);color:var(--rust);}
+.hist-time{font-size:9px;color:rgba(42,46,40,0.3);flex-shrink:0;}
+.hist-view-btn{
+  padding:4px 9px;border-radius:8px;border:0.5px solid rgba(201,151,58,0.3);
+  background:transparent;color:var(--gold);font-size:9px;
+  cursor:pointer;transition:all 0.16s;white-space:nowrap;flex-shrink:0;
+}
+.hist-view-btn:hover{background:var(--gold);color:#fff;}
 </style>
 </head>
 <body>
@@ -700,22 +764,22 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
               <div class="param-item">
                 <div class="param-hd"><span class="param-n">传统风格强度</span><span class="param-v" id="pv0">65</span></div>
                 <div class="param-d">数值越高越接近传统非遗原始风貌</div>
-                <input type="range" min="0" max="100" value="65" oninput="document.getElementById('pv0').textContent=this.value">
+                <input type="range" min="0" max="100" value="65" id="sl0" oninput="document.getElementById('pv0').textContent=this.value;S.params.tradition=+this.value;S.params.touched=true;">
               </div>
               <div class="param-item">
                 <div class="param-hd"><span class="param-n">色彩饱和度</span><span class="param-v" id="pv1">75</span></div>
                 <div class="param-d">控制画面颜色的鲜艳程度</div>
-                <input type="range" min="0" max="100" value="75" oninput="document.getElementById('pv1').textContent=this.value">
+                <input type="range" min="0" max="100" value="75" id="sl1" oninput="document.getElementById('pv1').textContent=this.value;S.params.saturation=+this.value;S.params.touched=true;">
               </div>
               <div class="param-item">
                 <div class="param-hd"><span class="param-n">纹样密度</span><span class="param-v" id="pv2">70</span></div>
                 <div class="param-d">纹样在产品上的疏密程度</div>
-                <input type="range" min="0" max="100" value="70" oninput="document.getElementById('pv2').textContent=this.value">
+                <input type="range" min="0" max="100" value="70" id="sl2" oninput="document.getElementById('pv2').textContent=this.value;S.params.density=+this.value;S.params.touched=true;">
               </div>
               <div class="param-item">
                 <div class="param-hd"><span class="param-n">现代融合度</span><span class="param-v" id="pv3">40</span></div>
                 <div class="param-d">传统与现代设计语言的融合比例</div>
-                <input type="range" min="0" max="100" value="40" oninput="document.getElementById('pv3').textContent=this.value">
+                <input type="range" min="0" max="100" value="40" id="sl3" oninput="document.getElementById('pv3').textContent=this.value;S.params.modern=+this.value;S.params.touched=true;">
               </div>
             </div>
           </div>
@@ -784,6 +848,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
         <div class="preview-card">
           <div class="preview-hd">
             <span class="preview-hd-title">作品预览</span>
+            <button class="new-work-btn" id="newWorkBtn" onclick="startNewWork()" style="display:none;">
+              <i class="ti ti-plus"></i>新建创作
+            </button>
             <span class="preview-badge" id="pvBadge">等待创作</span>
           </div>
           <div class="preview-canvas">
@@ -809,6 +876,20 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
               <i class="ti ti-share"></i>发布到百工坊
             </button>
           </div>
+        </div>
+
+        <!-- HISTORY -->
+        <div class="history-card" id="historyCard">
+          <div class="history-hd">
+            <i class="ti ti-history" style="font-size:13px;color:var(--gold);opacity:0.7;"></i>
+            <span class="history-hd-title">本次创作历史</span>
+            <span class="history-count" id="histCount">暂无记录</span>
+          </div>
+          <div class="history-empty" id="histEmpty">
+            <i class="ti ti-photo" style="font-size:20px;display:block;margin-bottom:6px;opacity:0.3;"></i>
+            生成第一张作品后<br>历史将在此显示
+          </div>
+          <div class="history-list" id="histList" style="display:none;"></div>
         </div>
 
         <!-- CHAT -->
@@ -914,7 +995,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 
 <script>
 /* ── STATE ── */
-const S={step:1,file:null,text:'',style:'',patterns:[],product:'',sketch:null,sketchProduct:''};
+const S={step:1,file:null,text:'',style:'',patterns:[],product:'',sketch:null,sketchProduct:'',params:{tradition:65,saturation:75,density:70,modern:40,touched:false}};
 
 /* ── WELCOME ── */
 function enterApp(){
@@ -1079,22 +1160,191 @@ function refreshSummary(){
 
 /* ── GENERATE ── */
 
-/* Prompt 组装 */
-function buildPrompt(layoutDesc){
-  const userEl   = S.text || '传统图案';
+/* ── Kimi 一体化润色：主体物 + 参数理解 + prompt优化，每次全新无状态单轮 ── */
+async function kimiEnrichPrompt(rawPrompt, rawEl, style, params){
+  // 将参数转为人类可读描述，明确告知Kimi
+  const traditionDesc = params.tradition >= 80 ? '极高（完全传统风貌）'
+    : params.tradition >= 55 ? '较高（传统为主）'
+    : params.tradition >= 35 ? '中等（传统现代各半）'
+    : '较低（现代设计为主）';
+  const satDesc = params.saturation >= 80 ? '极高（浓烈鲜艳）'
+    : params.saturation >= 55 ? '较高（色彩饱满）'
+    : params.saturation >= 35 ? '中等（典雅克制）'
+    : '极低（近乎单色/水墨素雅）';
+  const densityDesc = params.density >= 80 ? '极密（满铺无留白）'
+    : params.density >= 55 ? '中密（疏密有致）'
+    : params.density >= 35 ? '稀疏（大量留白）'
+    : '极简（仅点缀）';
+  const modernDesc = params.modern >= 75 ? '极高（几何解构/当代设计语言）'
+    : params.modern >= 50 ? '较高（传统元素现代化提炼）'
+    : params.modern >= 25 ? '较低（轻微现代调整）'
+    : '无（纯粹传统，拒绝任何现代改良）';
+
+  // 随机盐值，强制每次对话独立，避免模型走捷径复用
+  const salt = Math.random().toString(36).slice(2,8) + Date.now().toString(36);
+
+  const systemPrompt = `你是非遗文创AI图像提示词专家（本轮ID:${salt}）。
+你将收到一段基础提示词和用户的四项创作参数，任务是输出一段优化后的英文图像生成提示词。
+
+【严格要求】
+1. 必须根据四项参数数值调整描述，参数是用户明确的创作意图，不可忽视
+2. 对主体物"${rawEl}"添加具体生动的非遗美学动态描述（姿态/光影/细节），且每次必须不同
+3. 直接输出优化后的中文提示词，不要任何解释、序号、引号
+4. 色彩描述必须严格匹配饱和度参数——饱和度低则用"低饱和、哑光、灰调、素雅"等词，高则用"浓烈、鲜艳、饱和"
+5. 纹样密度低则强调"大面积留白、疏朗"，高则强调"满铺、繁复"
+6. 现代融合度高则加入"几何、解构、极简线条"，低则强调"古法、传统工艺原貌"
+7. 长度控制在120字以内`;
+
+  const userPrompt = `基础提示词：${rawPrompt}
+
+用户四项参数：
+- 传统风格强度：${params.tradition}/100（${traditionDesc}）
+- 色彩饱和度：${params.saturation}/100（${satDesc}）
+- 纹样密度：${params.density}/100（${densityDesc}）
+- 现代融合度：${params.modern}/100（${modernDesc}）
+
+请基于以上参数，输出优化后的图像生成提示词：`;
+
+  try{
+    const resp = await fetch('https://api.siliconflow.cn/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer sk-aktjrrercjksuauhsuzronvcfidafafxxyuxiuuigpdcixcm'},
+      body: JSON.stringify({
+        model:'Pro/moonshotai/Kimi-K2.6',
+        messages:[
+          {role:'system', content: systemPrompt},
+          {role:'user',   content: userPrompt}
+        ],
+        max_tokens:200,
+        temperature:0.92,
+        top_p:0.95
+      })
+    });
+    const data = await resp.json();
+    const result = data?.choices?.[0]?.message?.content?.trim();
+    console.log('[Kimi优化结果]', result);
+    if(result && !data?.code && result.length > 10) return result;
+    return rawPrompt; // 失败则回退
+  }catch(e){
+    console.warn('[Kimi调用失败]', e.message);
+    return rawPrompt;
+  }
+}
+
+/* ── 参数驱动基础风格词（本地生成，作为给Kimi的基础底稿）── */
+function buildStyleClause(params){
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const t = params.tradition;
+  const sat = params.saturation;
+  const den = params.density;
+  const mod = params.modern;
+
+  let traditionWord;
+  if(t >= 80)      traditionWord = pick(['严格遵循传统非遗典范，古朴正宗，原汁原味','高度还原历史经典样式，纹样考究，匠心传承']);
+  else if(t >= 55) traditionWord = pick(['传统韵味为主，局部加以提炼','保留非遗核心纹样，略作现代简化']);
+  else if(t >= 35) traditionWord = pick(['传统与现代各半，兼容并蓄','古典元素经过现代设计语言重新诠释']);
+  else             traditionWord = pick(['以现代设计为主框架，点缀非遗元素','极简现代感，仅保留传统纹样点睛之笔']);
+
+  let satWord;
+  if(sat >= 80)      satWord = pick(['色彩浓烈鲜艳，热烈奔放','饱和度极高，色调张扬华丽']);
+  else if(sat >= 55) satWord = pick(['色彩饱满明亮，层次丰富','色调鲜活，对比适中']);
+  else if(sat >= 35) satWord = pick(['色调典雅低饱和，含蓄内敛','雅致灰调，色彩克制']);
+  else               satWord = pick(['近乎单色调，水墨素雅，色彩极度克制','灰白哑光，几乎无彩色，素净如宣纸']);
+
+  let densityWord;
+  if(den >= 80)      densityWord = pick(['纹样铺满，繁复华丽，密不透风','满铺四方连续纹，纹样高密度覆盖']);
+  else if(den >= 55) densityWord = pick(['纹样中等密度，主次分明','装饰纹样适中，疏密有致']);
+  else if(den >= 35) densityWord = pick(['纹样稀疏，留白丰富，呼吸感强','点缀式纹样，大量留白，禅意疏朗']);
+  else               densityWord = pick(['极简纹样，仅关键处点缀一二','大面积素底，纹样极度克制']);
+
+  let modernWord;
+  if(mod >= 75)      modernWord = pick(['融入大量现代设计语言：极简线条、几何解构、扁平化','当代设计感强，色块几何与传统纹样并置']);
+  else if(mod >= 50) modernWord = pick(['适度融入现代排版与构成感','传统纹样经过现代几何化提炼']);
+  else if(mod >= 25) modernWord = pick(['以传统为主，仅在细节融入当代审美','保持传统工艺质感，微调现代比例']);
+  else               modernWord = pick(['纯粹传统工艺美学，不添加任何现代设计元素','完全复原经典非遗样式，拒绝现代改良']);
+
+  return [traditionWord, satWord, densityWord, modernWord].join('，') + '，';
+}
+
+/* ── Prompt 组装（先本地组装基础版，再交Kimi整体优化）── */
+async function buildPrompt(layoutDesc){
+  const rawEl   = S.text || '传统图案';
   const style    = S.style || '非遗';
   const patterns = S.patterns.join('、') || '传统纹样';
   const product  = S.product || '产品';
 
-  let layoutClause = '';
-  if(layoutDesc){
-    layoutClause = layoutDesc + '，';
-  }
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
-  const positive = '生成' + style + '风格，以' + userEl + '为主要装饰元素，融合' + patterns + '，' + layoutClause + '设计一张' + product + '的产品图，整体风格传统非遗文创，配色使用' + style + '传统色彩，构图精美，产品清晰完整。';
-  const negative = '低质量，模糊，变形，文字，水印，卡通风格，多个产品';
-  return {positive, negative};
+  // ── Step 1: 确定本次使用的参数（用户调过则用真实值，否则随机）──
+  const activeParams = S.params.touched ? {...S.params} : {
+    tradition:  Math.floor(Math.random()*101),
+    saturation: Math.floor(Math.random()*101),
+    density:    Math.floor(Math.random()*101),
+    modern:     Math.floor(Math.random()*101),
+  };
+
+  // ── Step 2: 本地组装基础 Prompt ──
+  const colorMap = {
+    '敦煌纹样': ['赭石红、石青、土黄、金箔色、朱砂橙','矿物石绿、藏青、赭石、暖金、珊瑚红','朱砂、石青蓝、土黄、黑墨、银白'],
+    '非遗蜡染': ['靛蓝、冰裂白、深藏青、灰蓝、月白','深蓝、浅蓝、白底蓝纹、冰裂纹蓝白','钴蓝、牛仔蓝、白、浅灰蓝'],
+    '非遗剪纸': ['大红、朱砂红、金黄点缀、黑底金纹','中国红、黑墨、金色、深红','鲜红、橙红、镂空白底'],
+    '传统刺绣': ['胭脂红、翡翠绿、宝蓝、鹅黄、紫罗兰','玫红、孔雀蓝、翠绿、杏黄、银线','桃粉、湖蓝、草绿、浅金、象牙白'],
+    '传统水墨': ['墨黑、宣纸米白、淡墨灰、浅赭、朱砂点缀','浓墨、枯墨飞白、淡墨晕染、米黄','水墨深灰、留白、淡花青、朱膘'],
+    '非遗皮影': ['黑底金纹、朱红、深棕、琥珀黄','黑色镂空、金色描边、棕红','深黑、暖金、朱砂红、牛皮棕'],
+  };
+  const colorOptions = colorMap[style] || [style+'传统色系、金色点缀', style+'古典配色'];
+  const colorPalette = pick(colorOptions);
+
+  const productRenderMap = {
+    '丝巾':  ['真丝质感，轻薄飘逸，柔滑光泽，织物纱线肌理清晰','缎面丝光反射，薄透飘动感，边缘卷曲自然'],
+    '手提袋': ['帆布材质，立体挺括结构，缝线针脚清晰','皮革质感，光滑反光，金属扣件细节，立体成型'],
+    '扇子':  ['折扇完全展开，扇骨弧线优美，折叠纹路细腻可见','团扇圆润，绢面质感，细竹骨架，流苏点缀'],
+    '夜灯':  ['暖光从内透出，磨砂玻璃柔光散射，光晕温馨','陶瓷灯体，镂空纹样透光，灯光与纹样交相辉映'],
+    '马克杯': ['光滑陶瓷釉面，杯体饱满圆润，镜面反光细节','哑光陶土质感，手工拉坯纹理，温润朴拙'],
+    '抱枕':  ['布艺刺绣质感，柔软蓬松饱满，针脚肌理细腻','丝绒面料，光泽丰盈，纹样立体感强'],
+  };
+  const renderOptions = productRenderMap[product] || ['产品质感细腻，工艺精湛','高端文创产品，材质考究'];
+  const productRender = pick(renderOptions);
+
+  const lightPool = ['柔和自然侧光，层次分明','暖金棚拍灯光，质感醇厚','博物馆射灯光，主体突出','漫射柔光，色彩饱满','晨光暖调，温润典雅'];
+  const light = pick(lightPool);
+
+  const qualityPool = ['商业级产品摄影，超高清细节，8K','专业摄影棚拍，锐利细节，高动态范围','杂志级产品图，精致质感，高保真','博物馆文物级别呈现，细节丰富，专业布光'];
+  const quality = pick(qualityPool);
+
+  const styleClause = buildStyleClause(activeParams);
+  const layoutClause = layoutDesc ? layoutDesc + '，' : '';
+
+  const basePrompt = [
+    style + '非遗文创风格，',
+    '以' + rawEl + '为核心视觉主体，',
+    '融合' + patterns + '传统纹样，',
+    layoutClause,
+    styleClause,
+    productRender + '，',
+    '色彩精准使用' + colorPalette + '，',
+    light + '，',
+    '设计一张' + product + '产品图，',
+    quality + '，单件产品完整清晰展示。',
+  ].join('');
+
+  // ── Step 3: 交给Kimi整体优化（全新单轮，无历史记忆）──
+  const optimized = await kimiEnrichPrompt(basePrompt, rawEl, style, activeParams);
+
+  const negative = [
+    '低质量，模糊，噪点，失真，变形，',
+    '文字，水印，logo，签名，',
+    '卡通风格，漫画风，儿童插画，',
+    '多个产品，重复图案拼贴，',
+    '过度曝光，过度锐化，色彩失真，',
+  ].join('');
+
+  S.currentSeed = Math.floor(Math.random() * 2147483647);
+  console.log('[最终Prompt→生图]', optimized);
+  return {positive: optimized, negative};
 }
+
+/* ── 参数驱动风格词生成 ── */
 
 async function doGenerate(){
   if(!S.style||!S.patterns.length||!S.product){showNotify('请先完成流派、吉纹、器物的选择');return;}
@@ -1125,8 +1375,10 @@ async function doGenerate(){
     if(pt)pt.innerHTML='正在凝聚「'+S.style+' · '+S.product+'」<br><span style="font-size:10px;opacity:0.6">AI图像生成中，请稍候</span>';
   }
 
-  /* 第二步：组装 Prompt */
-  const {positive,negative}=buildPrompt(layoutDesc);
+  /* 第二步：Kimi 润色主体物 + 组装 Prompt */
+  const pt2=document.getElementById('progTxt');
+  if(pt2)pt2.innerHTML='正在为「'+(S.text||'主体物')+'」注入非遗神韵…<br><span style="font-size:10px;opacity:0.6">Kimi正在润色创作提示词</span>';
+  const {positive,negative}=await buildPrompt(layoutDesc);
   console.log('FINAL PROMPT:', positive);
 
   /* 第三步：文生图 */
@@ -1139,9 +1391,10 @@ async function doGenerate(){
         prompt:positive,
         negative_prompt:negative,
         image_size:'1024x1024',
-        num_inference_steps:20,
-        guidance_scale:7.0,
-        num_images:1
+        num_inference_steps:25,
+        guidance_scale:7.5,
+        num_images:1,
+        seed:S.currentSeed
       })
     });
     const data=await resp.json();
@@ -1156,6 +1409,7 @@ async function doGenerate(){
       gb.disabled=false;gb.innerHTML='<i class="ti ti-refresh"></i>重新生成';
       /* 显示发布按钮，记录当前图片URL */
       S.lastImageUrl=imgUrl;
+      addHistory(imgUrl);  // 记录到历史
       const pb=document.getElementById('pubBtn');if(pb)pb.style.display='flex';
       showNotify('✓ 作品已成，请欣赏');
       const chatMsg=layoutDesc?'已为您生成作品，草图布局已被AI读取并融入构图。':'已为您生成「'+S.style+' · '+S.patterns.join('、')+' · '+S.product+'」作品！';
@@ -1500,6 +1754,141 @@ function submitPublish(){
   if(document.getElementById('plazaView')?.classList.contains('visible')){
     renderPlaza('全部');
   }
+}
+
+/* ══ 历史记录 ══ */
+const HISTORY = [];  // [{imgUrl, style, product, patterns, time, label}]
+
+function addHistory(imgUrl){
+  const now = new Date();
+  const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  const label = (S.style || '未知') + ' · ' + (S.product || '未知');
+  const entry = {
+    id: Date.now(),
+    imgUrl,
+    style: S.style,
+    product: S.product,
+    patterns: [...S.patterns],
+    time: timeStr,
+    label,
+    text: S.text || ''
+  };
+  HISTORY.unshift(entry);  // 最新在最上
+  renderHistory();
+  // 生成后显示「新建创作」按钮
+  const nb = document.getElementById('newWorkBtn');
+  if(nb) nb.style.display = 'flex';
+}
+
+function renderHistory(){
+  const list = document.getElementById('histList');
+  const empty = document.getElementById('histEmpty');
+  const count = document.getElementById('histCount');
+  if(!list) return;
+  if(HISTORY.length === 0){
+    list.style.display = 'none';
+    empty.style.display = 'block';
+    count.textContent = '暂无记录';
+    return;
+  }
+  empty.style.display = 'none';
+  list.style.display = 'flex';
+  count.textContent = HISTORY.length + ' 件作品';
+  list.innerHTML = HISTORY.map(h => `
+    <div class="hist-item" onclick="viewHistItem(${h.id})">
+      <div class="hist-thumb">
+        <img src="${h.imgUrl}" alt="">
+      </div>
+      <div class="hist-info">
+        <div class="hist-title">${h.label}${h.text ? ' · ' + h.text.slice(0,6) : ''}</div>
+        <div class="hist-tags">
+          ${h.patterns.map(p => '<span class="hist-tag">' + p + '</span>').join('')}
+        </div>
+      </div>
+      <span class="hist-time">${h.time}</span>
+      <button class="hist-view-btn" onclick="event.stopPropagation();viewHistItem(${h.id})">查看</button>
+    </div>
+  `).join('');
+}
+
+function viewHistItem(id){
+  const h = HISTORY.find(x => x.id === id);
+  if(!h) return;
+  // 在预览区展示该历史图
+  const pvr = document.getElementById('pvResult');
+  const badge = document.getElementById('pvBadge');
+  if(pvr){
+    pvr.style.display = 'flex';
+    pvr.innerHTML = '<div style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">'
+      + '<img src="' + h.imgUrl + '" style="max-height:270px;max-width:100%;object-fit:contain;border-radius:8px;box-shadow:0 4px 20px rgba(26,18,8,0.18);" alt="历史作品">'
+      + '<a href="' + h.imgUrl + '" download="非遗共创_历史_' + h.label + '.jpg" target="_blank" style="position:absolute;bottom:8px;right:8px;background:rgba(201,151,58,0.9);color:#fff;font-size:10px;padding:5px 10px;border-radius:12px;text-decoration:none;display:flex;align-items:center;gap:4px;"><i class="ti ti-download" style="font-size:12px"></i>下载</a>'
+      + '<div style="position:absolute;top:8px;left:8px;background:rgba(26,18,8,0.6);color:rgba(255,255,255,0.8);font-size:9px;padding:3px 8px;border-radius:8px;letter-spacing:0.5px;">历史作品 · ' + h.time + '</div>'
+      + '</div>';
+    document.getElementById('pvEmpty').style.display = 'none';
+  }
+  if(badge){ badge.textContent = '历史作品 ' + h.time; badge.className = 'preview-badge done'; }
+  showNotify('查看 ' + h.label);
+}
+
+/* ══ 新建创作：重置状态，保留历史 ══ */
+function startNewWork(){
+  // 重置状态（历史保留）
+  S.step = 1;
+  S.file = null;
+  S.text = '';
+  S.style = '';
+  S.patterns = [];
+  S.product = '';
+  S.sketch = null;
+  S.sketchProduct = '';
+  S.params = {tradition:65, saturation:75, density:70, modern:40, touched:false};
+  S.lastImageUrl = null;
+  S.currentSeed = null;
+
+  // 重置滑块显示值
+  const sliders = [{id:'sl0',pv:'pv0',def:65},{id:'sl1',pv:'pv1',def:75},{id:'sl2',pv:'pv2',def:70},{id:'sl3',pv:'pv3',def:40}];
+  sliders.forEach(s => {
+    const sl = document.getElementById(s.id);
+    const pv = document.getElementById(s.pv);
+    if(sl) sl.value = s.def;
+    if(pv) pv.textContent = s.def;
+  });
+
+  // 重置上传区
+  removeFile();
+
+  // 重置文字输入
+  const ei = document.getElementById('elemInput');
+  if(ei) ei.value = '';
+
+  // 清除所有选中状态
+  document.querySelectorAll('.opt-card.selected').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('.pat-card.selected').forEach(c => c.classList.remove('selected'));
+
+  // 重置预览区
+  const pvr = document.getElementById('pvResult');
+  const pve = document.getElementById('pvEmpty');
+  const badge = document.getElementById('pvBadge');
+  const pubBtn = document.getElementById('pubBtn');
+  if(pvr){ pvr.style.display = 'none'; pvr.innerHTML = ''; }
+  if(pve) pve.style.display = 'block';
+  if(badge){ badge.textContent = '等待创作'; badge.className = 'preview-badge'; }
+  if(pubBtn) pubBtn.style.display = 'none';
+
+  // 隐藏新建按钮（生成后再显示）
+  const nb = document.getElementById('newWorkBtn');
+  if(nb) nb.style.display = 'none';
+
+  // 重置画布
+  clearSketch && clearSketch();
+
+  // 回到第一境
+  refreshUI();
+  refreshSummary();
+
+  // 助理提示
+  aiSay('新的创作已开启！历史记录已保留，可随时在上方查看。请从第一境重新开始您的非遗之旅。');
+  showNotify('✓ 新建创作已开启');
 }
 
 /* INIT */
