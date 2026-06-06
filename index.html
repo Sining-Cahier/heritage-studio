@@ -571,6 +571,82 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
   cursor:pointer;transition:all 0.16s;white-space:nowrap;flex-shrink:0;
 }
 .hist-view-btn:hover{background:var(--gold);color:#fff;}
+
+/* ══ 三阶段进度动画 ══ */
+.gen-progress{
+  display:flex;flex-direction:column;align-items:center;
+  padding:28px 16px 24px;gap:0;width:100%;
+}
+.gen-stages{
+  display:flex;align-items:center;gap:0;margin-bottom:22px;width:100%;max-width:260px;
+}
+.gen-stage{
+  display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;position:relative;
+}
+.gen-stage-line{
+  flex:1;height:2px;background:rgba(201,151,58,0.15);margin-bottom:22px;
+  position:relative;overflow:hidden;
+}
+.gen-stage-line-fill{
+  position:absolute;left:0;top:0;height:100%;width:0%;
+  background:var(--gold);transition:width 0.8s ease;
+}
+.stage-circle{
+  width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;position:relative;flex-shrink:0;
+  background:var(--paper-mid);
+  border:2px solid rgba(201,151,58,0.2);
+  color:rgba(42,46,40,0.3);transition:all 0.4s ease;
+}
+.stage-circle.active{
+  border-color:var(--gold);color:var(--gold);
+  background:rgba(201,151,58,0.08);
+  box-shadow:0 0 0 4px rgba(201,151,58,0.12);
+  animation:stage-pulse 1.8s ease-in-out infinite;
+}
+.stage-circle.done{
+  background:var(--gold);color:#fff;border-color:var(--gold);
+  animation:none;box-shadow:none;
+}
+@keyframes stage-pulse{
+  0%,100%{box-shadow:0 0 0 4px rgba(201,151,58,0.12);}
+  50%{box-shadow:0 0 0 8px rgba(201,151,58,0.05);}
+}
+/* 旋转环 */
+.stage-circle.active::after{
+  content:'';position:absolute;inset:-4px;border-radius:50%;
+  border:2px solid transparent;
+  border-top-color:var(--gold);border-right-color:rgba(201,151,58,0.4);
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.stage-label{
+  font-size:9px;color:rgba(42,46,40,0.35);letter-spacing:0.3px;
+  font-family:'Noto Serif SC',serif;text-align:center;line-height:1.3;
+  transition:color 0.3s;white-space:nowrap;
+}
+.gen-stage.active .stage-label{color:var(--gold);}
+.gen-stage.done .stage-label{color:var(--jade);}
+
+.gen-main-txt{
+  font-size:12px;color:var(--ink-soft);font-family:'Noto Serif SC',serif;
+  text-align:center;line-height:1.8;margin-bottom:14px;min-height:40px;
+  transition:opacity 0.3s;
+}
+.gen-tip{font-size:10px;color:rgba(42,46,40,0.32);text-align:center;font-style:italic;}
+
+/* ══ 迭代生成按钮 ══ */
+.iter-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:20px;
+  border:1.5px solid rgba(99,160,120,0.4);
+  background:rgba(99,160,120,0.07);
+  color:var(--jade);font-size:11px;font-family:'Noto Serif SC',serif;
+  cursor:pointer;letter-spacing:0.5px;transition:all 0.22s;white-space:nowrap;
+}
+.iter-btn:hover{background:var(--jade);color:#fff;border-color:var(--jade);}
+.iter-btn i{font-size:13px;}
 </style>
 </head>
 <body>
@@ -791,7 +867,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
               <div class="step-realm">第六境</div>
               <div class="step-name">精工雕琢</div>
             </div>
-            <div class="step-poem">在产品白模上标注你的创意布局——<span style="color:#e05555;font-weight:500">红色笔刷</span>划定主体区域，<span style="color:#4a7fd4;font-weight:500">蓝色笔刷</span>勾勒纹样范围。AI将读懂你的手迹，精工雕琢。</div>
+            <div class="step-poem" id="poem6Normal">在产品白模上标注你的创意布局——<span style="color:#e05555;font-weight:500">红色笔刷</span>划定主体区域，<span style="color:#4a7fd4;font-weight:500">蓝色笔刷</span>勾勒纹样范围。AI将读懂你的手迹，精工雕琢。</div>
+<div class="step-poem" id="poem6Iter" style="display:none;">迭代模式——<span style="color:#e05555;font-weight:500">红色笔刷</span>标注保留区域，<span style="color:#4a7fd4;font-weight:500">蓝色笔刷</span>勾勒新纹样范围，<span style="color:#c8a832;font-weight:500">黄色笔刷</span>涂抹需要<b>修改/替换</b>的元素区域。</div>
             <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;" id="mockupTabs">
               <button class="mockup-tab active" onclick="switchMockup('手提袋',this)">手提袋</button>
               <button class="mockup-tab" onclick="switchMockup('扇子',this)">扇子</button>
@@ -812,6 +889,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
               <button class="brush-btn" id="brushBlue" onclick="setBrush('blue')"
                 style="border:1.5px solid rgba(74,127,212,0.4);background:transparent;color:#4a7fd4;">
                 <span style="width:11px;height:11px;border-radius:50%;background:#4a7fd4;display:inline-block;"></span>纹样范围
+              </button>
+              <button class="brush-btn" id="brushYellow" onclick="setBrush('yellow')"
+                style="display:none;border:1.5px solid rgba(200,168,50,0.5);background:rgba(200,168,50,0.1);color:#c8a832;">
+                <span style="width:11px;height:11px;border-radius:50%;background:#c8a832;display:inline-block;"></span>修改元素
               </button>
               <button class="brush-btn" id="brushEraser" onclick="setBrush('eraser')"
                 style="border:1.5px solid rgba(42,46,40,0.2);background:transparent;color:rgba(42,46,40,0.5);">
@@ -850,6 +931,9 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
             <span class="preview-hd-title">作品预览</span>
             <button class="new-work-btn" id="newWorkBtn" onclick="startNewWork()" style="display:none;">
               <i class="ti ti-plus"></i>新建创作
+            </button>
+            <button class="iter-btn" id="iterBtn" onclick="iterateFromResult()" style="display:none;">
+              <i class="ti ti-refresh"></i>以此迭代
             </button>
             <span class="preview-badge" id="pvBadge">等待创作</span>
           </div>
@@ -995,7 +1079,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 
 <script>
 /* ── STATE ── */
-const S={step:1,file:null,text:'',style:'',patterns:[],product:'',sketch:null,sketchProduct:'',params:{tradition:65,saturation:75,density:70,modern:40,touched:false}};
+const S={step:1,file:null,text:'',style:'',patterns:[],product:'',sketch:null,sketchProduct:'',params:{tradition:65,saturation:75,density:70,modern:40,touched:false},isIterate:false};
 
 /* ── WELCOME ── */
 function enterApp(){
@@ -1041,7 +1125,19 @@ function refreshUI(){
   bb.style.display=S.step>1?'flex':'none';
   const bs=document.getElementById('btnSkip');
   bs.style.display=(S.step===5||S.step===6)?'block':'none';
-  if(S.step===6){setTimeout(()=>{initSketch();const p=S.product||'手提袋';switchMockup(p,null);document.querySelectorAll('.mockup-tab').forEach(b=>{b.classList.toggle('active',b.textContent===p);});},120);}
+  if(S.step===6){setTimeout(()=>{
+    initSketch();
+    const p=S.product||'手提袋';
+    switchMockup(p,null);
+    document.querySelectorAll('.mockup-tab').forEach(b=>{b.classList.toggle('active',b.textContent===p);});
+    // 迭代模式：显示黄色笔刷 + 对应说明
+    const yb=document.getElementById('brushYellow');
+    const p6n=document.getElementById('poem6Normal');
+    const p6i=document.getElementById('poem6Iter');
+    if(yb) yb.style.display=S.isIterate?'inline-flex':'none';
+    if(p6n) p6n.style.display=S.isIterate?'none':'block';
+    if(p6i) p6i.style.display=S.isIterate?'block':'none';
+  },120);}
   const bn=document.getElementById('btnNext');
   if(S.step===6){
     bn.innerHTML='天工造物·立即生成 <i class="ti ti-sparkles"></i>';
@@ -1053,13 +1149,29 @@ function refreshUI(){
 }
 function canGo(){
   if(S.step===1)return S.file||S.text.trim().length>0;
-  if(S.step===2)return S.style!=='';
+  if(S.step===2)return S.isIterate||S.style!=='';
   if(S.step===3)return S.patterns.length>0;
-  if(S.step===4)return S.product!=='';
+  if(S.step===4)return S.isIterate||S.product!=='';
   return true;
 }
-function goNext(){if(!canGo())return;if(S.step<6){S.step++;refreshUI();refreshSummary();}}
-function goBack(){if(S.step>1){S.step--;refreshUI();}}
+function goNext(){
+  if(!canGo())return;
+  if(S.step<6){
+    S.step++;
+    // 迭代模式：跳过第2境(流派)和第4境(产品)，已有历史值
+    if(S.isIterate && S.step===2) S.step=3;
+    if(S.isIterate && S.step===4) S.step=5;
+    refreshUI();refreshSummary();
+  }
+}
+function goBack(){
+  if(S.step>1){
+    S.step--;
+    if(S.isIterate && S.step===4) S.step=3;
+    if(S.isIterate && S.step===2) S.step=1;
+    refreshUI();
+  }
+}
 
 /* ── SELECTIONS ── */
 function pickOpt(el,type,val){
@@ -1161,7 +1273,7 @@ function refreshSummary(){
 /* ── GENERATE ── */
 
 /* ── Kimi 一体化润色：主体物 + 参数理解 + prompt优化，每次全新无状态单轮 ── */
-async function kimiOncePrompt(rawEl, style, patterns, product, activeParams, sketchBase64){
+async function kimiOncePrompt(rawEl, style, patterns, product, activeParams, sketchBase64, isIterate){
   // 参数语义描述
   const satDesc = activeParams.saturation >= 80 ? '极高（浓烈鲜艳）'
     : activeParams.saturation >= 55 ? '较高（色彩饱满）'
@@ -1194,7 +1306,8 @@ async function kimiOncePrompt(rawEl, style, patterns, product, activeParams, ske
    - 纹样密度${activeParams.density}/100（${densityDesc}）→ 低则写"大面积留白疏朗"，高则写"满铺繁复"
    - 现代融合${activeParams.modern}/100（${modernDesc}）→ 高则加"几何解构极简"，低则"古法传统"
 4. 包含${product}产品材质质感描述
-5. ${sketchBase64 ? '根据草图中红色/蓝色区域描述主体和纹样的位置布局' : '构图自由发挥'}`;
+5. ${sketchBase64 && isIterate ? '草图红色=保留区，蓝色=新纹样范围，黄色=需替换修改的元素——提示词中明确哪些保留哪些替换' : sketchBase64 ? '根据草图红色/蓝色区域描述主体和纹样的位置布局' : '构图自由发挥'}
+6. ${isIterate ? '迭代模式：整体构图保持一致，重点对黄色标注区域进行局部替换或风格调整' : ''}` ;
 
   // 构建消息内容
   const userContent = sketchBase64
@@ -1231,16 +1344,50 @@ async function doGenerate(){
   document.getElementById('pvEmpty').style.display='none';
   const pvr=document.getElementById('pvResult');
   pvr.style.display='flex';
-  pvr.innerHTML='<div class="prog-wrap"><div class="ldots"><span></span><span></span><span></span></div><div class="prog-txt" id="progTxt">正在凝聚「'+S.style+' · '+S.product+'」<br><span style="font-size:10px;opacity:0.6">AI图像生成约需30-60秒</span></div><div class="prog-bar"><div class="prog-fill" id="pgf" style="width:0%"></div></div></div>';
+
+  // ── 三阶段进度 UI ──
+  pvr.innerHTML=`<div class="gen-progress">
+    <div class="gen-stages">
+      <div class="gen-stage active" id="gs0">
+        <div class="stage-circle active" id="sc0"><i class="ti ti-wand"></i></div>
+        <span class="stage-label">提示词<br>生成中</span>
+      </div>
+      <div class="gen-stage-line"><div class="gen-stage-line-fill" id="sl01"></div></div>
+      <div class="gen-stage" id="gs1">
+        <div class="stage-circle" id="sc1"><i class="ti ti-palette"></i></div>
+        <span class="stage-label">画面<br>渲染中</span>
+      </div>
+      <div class="gen-stage-line"><div class="gen-stage-line-fill" id="sl12"></div></div>
+      <div class="gen-stage" id="gs2">
+        <div class="stage-circle" id="sc2"><i class="ti ti-check"></i></div>
+        <span class="stage-label">精修<br>完成</span>
+      </div>
+    </div>
+    <div class="gen-main-txt" id="genMainTxt">正在凝练「${S.style}」神韵<br>为您的${S.product}量身裁制提示词…</div>
+    <div class="gen-tip" id="genTip">Kimi 正在解读您的创作意图</div>
+  </div>`;
+
   const gb=document.getElementById('genBtn');
   gb.disabled=true;gb.innerHTML='<i class="ti ti-loader"></i>天工运转中…';
 
-  let prog=0;
-  const iv=setInterval(()=>{
-    prog=Math.min(85,prog+(prog<40?Math.random()*5:Math.random()*1.5));
-    const pf=document.getElementById('pgf');
-    if(pf)pf.style.width=Math.round(prog)+'%';
-  },800);
+  // 阶段推进函数
+  function setStage(n, mainTxt, tip){
+    [0,1,2].forEach(i=>{
+      const sc=document.getElementById('sc'+i);
+      const gs=document.getElementById('gs'+i);
+      if(!sc||!gs)return;
+      if(i<n){sc.className='stage-circle done';sc.innerHTML='<i class="ti ti-check"></i>';gs.className='gen-stage done';}
+      else if(i===n){sc.className='stage-circle active';gs.className='gen-stage active';}
+      else{sc.className='stage-circle';gs.className='gen-stage';}
+    });
+    if(n>0){const l=document.getElementById('sl0'+(n===1?'1':'12'));if(l)l.style.width='100%';}
+    if(n>1){const l=document.getElementById('sl12');if(l)l.style.width='100%';}
+    const mt=document.getElementById('genMainTxt');if(mt)mt.innerHTML=mainTxt;
+    const tp=document.getElementById('genTip');if(tp)tp.textContent=tip;
+  }
+
+  // 假进度条已由阶段驱动，这里只保留变量占位供 clearInterval
+  const iv=setInterval(()=>{},9999);
 
   /* 准备参数 */
   const activeParams = S.params.touched ? {...S.params} : {
@@ -1251,15 +1398,16 @@ async function doGenerate(){
   };
   S.currentSeed = Math.floor(Math.random() * 2147483647);
 
-  /* 一次 Kimi 调用：草图分析 + 主体物润色 + 参数风格 全部完成 */
-  const pt=document.getElementById('progTxt');
-  if(pt)pt.innerHTML='正在生成专属提示词…<br><span style="font-size:10px;opacity:0.6">Kimi创作中，稍等片刻</span>';
+  /* 阶段1：Kimi 一次调用完成提示词 */
+  setStage(0, '正在凝练「'+S.style+'」神韵<br>Kimi为您的'+S.product+'量身裁制提示词…', 'Kimi 解读创作意图 · 通常需要10-20秒');
   const finalPositive = await kimiOncePrompt(
     S.text||'传统图案', S.style||'非遗', S.patterns.join('、')||'传统纹样',
-    S.product||'产品', activeParams, S.sketch||null
+    S.product||'产品', activeParams, S.sketch||null, S.isIterate||false
   );
-  if(pt)pt.innerHTML='提示词就绪，正在生成作品…<br><span style="font-size:10px;opacity:0.6">AI图像生成约需15-20秒</span>';
   console.log('FINAL PROMPT:', finalPositive);
+
+  /* 阶段2：开始生图 */
+  setStage(1, '提示词已就绪，天工正在挥毫<br>为您描绘「'+(S.text||'主体物')+'」…', 'Z-Image 图像渲染中 · 通常需要15-25秒');
 
   const negative = '低质量，模糊，噪点，失真，变形，文字，水印，卡通风格，多个产品，过度曝光，色彩失真，';
 
@@ -1292,7 +1440,9 @@ async function doGenerate(){
       /* 显示发布按钮，记录当前图片URL */
       S.lastImageUrl=imgUrl;
       addHistory(imgUrl);  // 记录到历史
+      setStage(2, '作品已完成！', '');  // 阶段3完成
       const pb=document.getElementById('pubBtn');if(pb)pb.style.display='flex';
+      const ib=document.getElementById('iterBtn');if(ib)ib.style.display='flex';
       showNotify('✓ 作品已成，请欣赏');
       const chatMsg=layoutDesc?'已为您生成作品，草图布局已被AI读取并融入构图。':'已为您生成「'+S.style+' · '+S.patterns.join('、')+' · '+S.product+'」作品！';
       if(typeof aiSay==='function')aiSay(chatMsg);
@@ -1390,7 +1540,10 @@ function sketchDraw(e,canvas,isStart){
     sketchCtx.strokeStyle='rgba(0,0,0,1)';
   }else{
     sketchCtx.globalCompositeOperation='source-over';
-    sketchCtx.strokeStyle=brushColor==='red'?'rgba(224,85,85,0.8)':'rgba(74,127,212,0.8)';
+    sketchCtx.strokeStyle=
+      brushColor==='red'    ?'rgba(224,85,85,0.8)':
+      brushColor==='yellow' ?'rgba(200,168,50,0.85)':
+                             'rgba(74,127,212,0.8)';
   }
   sketchCtx.lineTo(x,y);sketchCtx.stroke();sketchCtx.moveTo(x,y);
 }
@@ -1398,11 +1551,12 @@ function sketchDraw(e,canvas,isStart){
 function setBrush(color){
   brushColor=color;
   const styles={
-    red:{border:'1.5px solid #e05555',background:'rgba(224,85,85,0.15)',color:'#e05555'},
-    blue:{border:'1.5px solid rgba(74,127,212,0.5)',background:'rgba(74,127,212,0.1)',color:'#4a7fd4'},
-    eraser:{border:'1.5px solid rgba(42,46,40,0.25)',background:'rgba(42,46,40,0.05)',color:'rgba(42,46,40,0.6)'}
+    red:    {border:'1.5px solid #e05555',background:'rgba(224,85,85,0.15)',color:'#e05555'},
+    blue:   {border:'1.5px solid rgba(74,127,212,0.5)',background:'rgba(74,127,212,0.1)',color:'#4a7fd4'},
+    yellow: {border:'1.5px solid rgba(200,168,50,0.5)',background:'rgba(200,168,50,0.1)',color:'#c8a832'},
+    eraser: {border:'1.5px solid rgba(42,46,40,0.25)',background:'rgba(42,46,40,0.05)',color:'rgba(42,46,40,0.6)'}
   };
-  ['red','blue','eraser'].forEach(c=>{
+  ['red','blue','yellow','eraser'].forEach(c=>{
     const el=document.getElementById('brush'+c.charAt(0).toUpperCase()+c.slice(1));
     if(!el)return;
     Object.assign(el.style,styles[c]);
@@ -1657,7 +1811,7 @@ function addHistory(imgUrl){
   };
   HISTORY.unshift(entry);  // 最新在最上
   renderHistory();
-  // 生成后显示「新建创作」按钮
+  // 生成后显示「新建创作」和「以此迭代」按钮
   const nb = document.getElementById('newWorkBtn');
   if(nb) nb.style.display = 'flex';
 }
@@ -1712,6 +1866,99 @@ function viewHistItem(id){
   showNotify('查看 ' + h.label);
 }
 
+
+/* ══ 以此迭代：把当前生成图注入第一境参考图，重走流程 ══ */
+async function iterateFromResult(){
+  if(!S.lastImageUrl){ showNotify('暂无可迭代的图像'); return; }
+
+  showNotify('正在准备迭代素材…');
+
+  // 把图片URL转为File对象，注入第一境
+  try{
+    const resp = await fetch(S.lastImageUrl);
+    const blob = await resp.blob();
+    const file = new File([blob], 'iterate_base.jpg', {type:'image/jpeg'});
+
+    // 重置状态（保留历史）但只到第一境
+    S.step = 1;
+    S.isIterate = true;
+    S.file = file;
+    S.text = '';
+    S.style = '';
+    S.patterns = [];
+    S.product = '';
+    S.sketch = null;
+    S.sketchProduct = '';
+    S.params = {tradition:65, saturation:75, density:70, modern:40, touched:false};
+
+    // 重置滑块
+    [{id:'sl0',pv:'pv0',def:65},{id:'sl1',pv:'pv1',def:75},{id:'sl2',pv:'pv2',def:70},{id:'sl3',pv:'pv3',def:40}]
+      .forEach(s=>{ const el=document.getElementById(s.id);const pv=document.getElementById(s.pv);
+        if(el)el.value=s.def;if(pv)pv.textContent=s.def; });
+
+    // 把图片显示在上传区（模拟用户上传）
+    const reader = new FileReader();
+    reader.onload = async e => {
+      const dataUrl = e.target.result;
+      document.getElementById('prevImg').src = dataUrl;
+      document.getElementById('upName').textContent = '迭代基础图.jpg';
+      document.getElementById('uploadZone').style.display = 'none';
+      document.getElementById('upPrev').style.display = 'block';
+      document.getElementById('btnNext').disabled = false;
+
+      // 重置预览区和按钮
+      const pvr=document.getElementById('pvResult');
+      const pve=document.getElementById('pvEmpty');
+      const badge=document.getElementById('pvBadge');
+      const pubBtn=document.getElementById('pubBtn');
+      const iterBtnEl=document.getElementById('iterBtn');
+      const newWBtn=document.getElementById('newWorkBtn');
+      if(pvr){pvr.style.display='none';pvr.innerHTML='';}
+      if(pve)pve.style.display='block';
+      if(badge){badge.textContent='等待创作';badge.className='preview-badge';}
+      if(pubBtn)pubBtn.style.display='none';
+      if(iterBtnEl)iterBtnEl.style.display='none';
+      if(newWBtn)newWBtn.style.display='none';
+
+      // 清除选中状态
+      document.querySelectorAll('.opt-card.selected,.pat-card.selected').forEach(c=>c.classList.remove('selected'));
+
+      refreshUI();
+      refreshSummary();
+
+      // 自动识别主体物（复用图片上传的识别逻辑）
+      aiSay('已将上一张作品作为参考图，Kimi 正在重新识别主体物，您可以在此基础上调整流派和纹样进行迭代创作！');
+      try{
+        const base64 = dataUrl.split(',')[1];
+        const resp2 = await fetch('https://api.siliconflow.cn/v1/chat/completions',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','Authorization':'Bearer sk-aktjrrercjksuauhsuzronvcfidafafxxyuxiuuigpdcixcm'},
+          body:JSON.stringify({
+            model:'Pro/moonshotai/Kimi-K2.6',
+            messages:[
+              {role:'system',content:'你是非遗文创设计助手。识别图中最主要的视觉主体物，用2-5个字简洁描述，只输出名称。'},
+              {role:'user',content:[{type:'image_url',image_url:{url:'data:image/jpeg;base64,'+base64}},{type:'text',text:'识别主体物：'}]}
+            ],
+            max_tokens:20, temperature:0.1
+          })
+        });
+        const d2 = await resp2.json();
+        const subject = d2?.choices?.[0]?.message?.content?.trim();
+        if(subject && !d2?.code){
+          const ei = document.getElementById('elemInput');
+          if(ei){ei.value=subject;S.text=subject;refreshSummary();}
+          showNotify('✓ 迭代参考图已载入，主体：'+subject);
+        }
+      }catch(e2){ showNotify('✓ 迭代参考图已载入'); }
+    };
+    reader.readAsDataURL(file);
+
+  }catch(e){
+    showNotify('迭代图片加载失败，请稍后重试');
+    console.error(e);
+  }
+}
+
 /* ══ 新建创作：重置状态，保留历史 ══ */
 function startNewWork(){
   // 重置状态（历史保留）
@@ -1724,6 +1971,7 @@ function startNewWork(){
   S.sketch = null;
   S.sketchProduct = '';
   S.params = {tradition:65, saturation:75, density:70, modern:40, touched:false};
+  S.isIterate = false;
   S.lastImageUrl = null;
   S.currentSeed = null;
 
@@ -1757,9 +2005,11 @@ function startNewWork(){
   if(badge){ badge.textContent = '等待创作'; badge.className = 'preview-badge'; }
   if(pubBtn) pubBtn.style.display = 'none';
 
-  // 隐藏新建按钮（生成后再显示）
+  // 隐藏新建/迭代按钮（生成后再显示）
   const nb = document.getElementById('newWorkBtn');
   if(nb) nb.style.display = 'none';
+  const ib2 = document.getElementById('iterBtn');
+  if(ib2) ib2.style.display = 'none';
 
   // 重置画布
   clearSketch && clearSketch();
