@@ -1294,20 +1294,36 @@ async function kimiOncePrompt(rawEl, style, patterns, product, activeParams, ske
 
   const salt = Math.random().toString(36).slice(2,7) + Date.now().toString(36).slice(-4);
 
-  const systemText = `你是非遗文创AI图像提示词专家（ID:${salt}）。
-任务：直接输出一段用于文生图的中文提示词，120字以内，无解释无标点多余。
+  const systemText = `你是顶级非遗文创AI图像提示词专家（本轮ID:${salt}）。
 
-规则：
-1. 以"${rawEl}"为主体，加入生动的非遗美学动态细节（姿态/纹理/光影），每次必须不同
-2. 融合${patterns}纹样，流派${style}
-3. 严格按参数调整：
-   - 色彩饱和度${activeParams.saturation}/100（${satDesc}）→ 低则写"低饱和哑光素雅"，高则写"浓烈鲜艳饱和"
+【核心任务】输出一段专业的中文图像生成提示词，200-280字，要求信息密度高、细节丰富。
+禁止：任何解释、前言、编号、引号、废话。直接输出提示词正文。
+
+【必须包含的六个维度，缺一不可】
+
+① 非遗流派与风格基调（必须写明"${style}"流派的核心美学特征）
    - 传统强度${activeParams.tradition}/100（${traditionDesc}）
-   - 纹样密度${activeParams.density}/100（${densityDesc}）→ 低则写"大面积留白疏朗"，高则写"满铺繁复"
-   - 现代融合${activeParams.modern}/100（${modernDesc}）→ 高则加"几何解构极简"，低则"古法传统"
-4. 包含${product}产品材质质感描述
-5. ${sketchBase64 && isIterate ? '草图红色=保留区，蓝色=新纹样范围，黄色=需替换修改的元素——提示词中明确哪些保留哪些替换' : sketchBase64 ? '根据草图红色/蓝色区域描述主体和纹样的位置布局' : '构图自由发挥'}
-6. ${isIterate ? '迭代模式：整体构图保持一致，重点对黄色标注区域进行局部替换或风格调整' : ''}` ;
+   - 现代融合${activeParams.modern}/100（${modernDesc}）
+
+② 主体物"${rawEl}"的生动描述（姿态/动作/神态/光影细节，本次随机选一个不同角度描绘，禁止平铺直叙）
+
+③ 纹样装饰（必须出现"${patterns}"，描述其在产品上的分布位置、大小、疏密）
+   - 纹样密度${activeParams.density}/100（${densityDesc}）→ 低则留白为主，高则满铺繁复
+
+④ 色彩配色（基于${style}传统色系，精确描述3-4种主要颜色名称）
+   - 色彩饱和度${activeParams.saturation}/100（${satDesc}）→ 严格体现，低饱和必须写"低饱和哑光""素雅灰调"等词
+
+⑤ 产品材质与质感（"${product}"的具体材质肌理、光泽、工艺细节）
+
+⑥ 画面品质（光线、构图氛围、摄影级别描述）
+
+${sketchBase64 && isIterate
+  ? '【草图指令】红色区域=完全保留；蓝色区域=新纹样覆盖；黄色区域=替换修改——提示词中逐一说明'
+  : sketchBase64
+    ? '【草图指令】严格按草图中红色（主体位置）和蓝色（纹样区域）安排画面布局'
+    : '【构图】根据产品特点自由设计构图'}
+
+${isIterate ? '【迭代模式】在保持整体构图风格连续性的基础上，仅对标注区域进行局部调整，其余保持一致' : ''}` ;
 
   // 构建消息内容
   const userContent = sketchBase64
@@ -1322,7 +1338,7 @@ async function kimiOncePrompt(rawEl, style, patterns, product, activeParams, ske
       body: JSON.stringify({
         model:'Pro/moonshotai/Kimi-K2.6',
         messages:[{role:'system',content:systemText},{role:'user',content:userContent}],
-        max_tokens:180, temperature:0.92, top_p:0.95
+        max_tokens:400, temperature:0.92, top_p:0.95
       })
     });
     const data = await resp.json();
@@ -1330,14 +1346,14 @@ async function kimiOncePrompt(rawEl, style, patterns, product, activeParams, ske
     if(result && !data?.code && result.length > 10) return result;
   }catch(e){ console.warn('[Kimi失败]', e.message); }
   // 失败时本地fallback
-  return `${style}非遗文创风格，以${rawEl}为核心视觉主体，融合${patterns}传统纹样，设计一张${product}产品图，工艺精湛，高清细节。`;
+  return `${style}非遗文创风格，以${rawEl}为核心视觉主体，${rawEl}形态生动传神，融合${patterns}传统纹样精心点缀，纹样疏密有致覆盖产品表面，配色遵循${style}传统色彩体系，色调典雅，设计一张${product}产品图，${product}材质质感细腻，工艺精湛，商业级产品摄影，高清8K细节，单件产品完整清晰展示。`;
 }
 
 
 /* ── 参数驱动风格词生成 ── */
 
 async function doGenerate(){
-  if(!S.style||!S.patterns.length||!S.product){showNotify('请先完成流派、吉纹、器物的选择');return;}
+  if(!S.isIterate && (!S.style||!S.patterns.length||!S.product)){showNotify('请先完成流派、吉纹、器物的选择');return;}
 
   const badge=document.getElementById('pvBadge');
   badge.textContent='天工运转中…';badge.className='preview-badge gen';
@@ -1409,7 +1425,7 @@ async function doGenerate(){
   /* 阶段2：开始生图 */
   setStage(1, '提示词已就绪，天工正在挥毫<br>为您描绘「'+(S.text||'主体物')+'」…', 'Z-Image 图像渲染中 · 通常需要15-25秒');
 
-  const negative = '低质量，模糊，噪点，失真，变形，文字，水印，卡通风格，多个产品，过度曝光，色彩失真，';
+  const negative = '低质量，模糊，噪点，失真，变形，文字，水印，logo，签名，卡通风格，漫画风，儿童插画，多个产品，重复图案，过度曝光，过度锐化，色彩失真，西方风格，现代抽象，涂鸦，低分辨率，';
 
   /* 第三步：文生图 */
   try{
@@ -1879,14 +1895,17 @@ async function iterateFromResult(){
     const blob = await resp.blob();
     const file = new File([blob], 'iterate_base.jpg', {type:'image/jpeg'});
 
-    // 重置状态（保留历史）但只到第一境
+    // 重置状态（保留历史）——style/patterns/product 保留供迭代使用
+    const prevStyle    = S.style;
+    const prevPatterns = [...S.patterns];
+    const prevProduct  = S.product;
     S.step = 1;
     S.isIterate = true;
     S.file = file;
     S.text = '';
-    S.style = '';
-    S.patterns = [];
-    S.product = '';
+    S.style    = prevStyle;     // 保留流派
+    S.patterns = prevPatterns;  // 保留纹样
+    S.product  = prevProduct;   // 保留产品
     S.sketch = null;
     S.sketchProduct = '';
     S.params = {tradition:65, saturation:75, density:70, modern:40, touched:false};
