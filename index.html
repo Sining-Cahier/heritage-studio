@@ -1313,7 +1313,7 @@ async function kimiOncePrompt(rawEl, style, patterns, product, activeParams, ske
 ④ 色彩配色（基于${style}传统色系，精确描述3-4种主要颜色名称）
    - 色彩饱和度${activeParams.saturation}/100（${satDesc}）→ 严格体现，低饱和必须写"低饱和哑光""素雅灰调"等词
 
-⑤ 产品材质与质感（"${product}"的具体材质肌理、光泽、工艺细节）
+⑤ 产品材质与质感（"${product}"的具体材质肌理、光泽、工艺细节）——最终画面必须是${product}产品实物图，产品是画面唯一主体，非纯艺术插画
 
 ⑥ 画面品质（光线、构图氛围、摄影级别描述）
 
@@ -1323,7 +1323,11 @@ ${sketchBase64 && isIterate
     ? '【草图指令】严格按草图中红色（主体位置）和蓝色（纹样区域）安排画面布局'
     : '【构图】根据产品特点自由设计构图'}
 
-${isIterate ? '【迭代模式】在保持整体构图风格连续性的基础上，仅对标注区域进行局部调整，其余保持一致' : ''}` ;
+${isIterate ? '【迭代模式】在保持整体构图风格连续性的基础上，仅对标注区域进行局部调整，其余保持一致' : ''}
+
+【最终输出格式硬性要求——必须在提示词结尾加入以下内容，不可省略】
+产品实物展示图，${product}完整清晰呈现，单件产品居主体位置，产品轮廓完整不被裁切，商业级产品摄影棚拍风格，高清超写实，8K分辨率` ;
+
 
   // 构建消息内容
   const userContent = sketchBase64
@@ -1343,10 +1347,13 @@ ${isIterate ? '【迭代模式】在保持整体构图风格连续性的基础�
     });
     const data = await resp.json();
     const result = data?.choices?.[0]?.message?.content?.trim();
-    if(result && !data?.code && result.length > 10) return result;
+    if(result && !data?.code && result.length > 10){
+      const productSuffix = `，${product}产品实物图，单件${product}完整清晰置于画面中心，商业产品摄影构图，高清8K，背景简洁，产品为主体焦点。`;
+      return result + productSuffix;
+    }
   }catch(e){ console.warn('[Kimi失败]', e.message); }
   // 失败时本地fallback
-  return `${style}非遗文创风格，以${rawEl}为核心视觉主体，${rawEl}形态生动传神，融合${patterns}传统纹样精心点缀，纹样疏密有致覆盖产品表面，配色遵循${style}传统色彩体系，色调典雅，设计一张${product}产品图，${product}材质质感细腻，工艺精湛，商业级产品摄影，高清8K细节，单件产品完整清晰展示。`;
+  return `${style}非遗文创风格，以${rawEl}为核心视觉主体，${rawEl}形态生动传神，融合${patterns}传统纹样精心点缀，纹样疏密有致覆盖产品表面，配色遵循${style}传统色彩体系，色调典雅，产品实物展示图，${product}完整清晰呈现于画面主体，单件${product}居中展示，产品轮廓完整不被裁切，${product}材质质感细腻，工艺精湛，商业级产品摄影棚拍风格，高清8K超写实，单件产品完整清晰展示。`;
 }
 
 
@@ -1425,7 +1432,7 @@ async function doGenerate(){
   /* 阶段2：开始生图 */
   setStage(1, '提示词已就绪，天工正在挥毫<br>为您描绘「'+(S.text||'主体物')+'」…', 'Z-Image 图像渲染中 · 通常需要15-25秒');
 
-  const negative = '低质量，模糊，噪点，失真，变形，文字，水印，logo，签名，卡通风格，漫画风，儿童插画，多个产品，重复图案，过度曝光，过度锐化，色彩失真，西方风格，现代抽象，涂鸦，低分辨率，';
+  const negative = '低质量，模糊，噪点，失真，变形，文字，水印，logo，签名，卡通风格，漫画风，儿童插画，多个产品，重复图案，过度曝光，过度锐化，色彩失真，西方风格，现代抽象，涂鸦，低分辨率，纯艺术插画，海报，无产品，产品不完整，产品被裁切，产品消失，产品模糊，背景喧宾夺主，抽象概念图，风景图，人物图，无实物，';
 
   /* 第三步：文生图 */
   try{
@@ -1460,7 +1467,7 @@ async function doGenerate(){
       const pb=document.getElementById('pubBtn');if(pb)pb.style.display='flex';
       const ib=document.getElementById('iterBtn');if(ib)ib.style.display='flex';
       showNotify('✓ 作品已成，请欣赏');
-      const chatMsg=layoutDesc?'已为您生成作品，草图布局已被AI读取并融入构图。':'已为您生成「'+S.style+' · '+S.patterns.join('、')+' · '+S.product+'」作品！';
+      const chatMsg=S.sketch?'已为您生成作品，草图布局已被AI读取并融入构图。':'已为您生成「'+S.style+' · '+S.patterns.join('、')+' · '+S.product+'」作品！';
       if(typeof aiSay==='function')aiSay(chatMsg);
     },400);
   }catch(err){
