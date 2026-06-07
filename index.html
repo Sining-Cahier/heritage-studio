@@ -1274,11 +1274,10 @@ async function kimiOncePrompt(rawEl, style, patterns, product, activeParams, ske
   };
   const styleCore = styleGuide[style] || style + '非遗传统美学，沿用流派经典配色和工艺特征';
 
-  // 预先计算条件字符串，避免模板字符串内跨行单引号导致语法错误
+  // 草图指令
   const sketchClause = sketchBase64
     ? '\n【草图布局指令】严格参照草图：红色笔刷标注的是主体物位置，蓝色笔刷标注的是纹样装饰范围，按此布局描述构图。'
     : '';
-  const iterClause = '';
 
   const systemText = `你是顶级非遗文创AI图像提示词专家（本轮ID:${salt}）。
 
@@ -1303,7 +1302,7 @@ async function kimiOncePrompt(rawEl, style, patterns, product, activeParams, ske
 
 要素六【画面品质】专业摄影棚布光，光线柔和自然，高清8K商业产品摄影，单件${product}居中完整展示。
 
-${sketchClause}${iterClause}` ;
+${sketchClause}` ;
 
 
   // 构建消息内容
@@ -1324,7 +1323,7 @@ ${sketchClause}${iterClause}` ;
     });
     const data = await resp.json();
     const result = data?.choices?.[0]?.message?.content?.trim();
-    if(result && !data?.code && result.length > 10) return result + `，这是一张${product}的产品图。`;
+    if(result && !data?.code && result.length > 10) return result;
   }catch(e){ console.warn('[Kimi失败]', e.message); }
   // 失败时本地fallback
   return `${style}非遗文创风格，以${rawEl}为核心视觉主体，${rawEl}形态生动传神，融合${patterns}传统纹样精心点缀，纹样疏密有致覆盖产品表面，配色遵循${style}传统色彩体系，色调典雅，产品实物展示图，${product}完整清晰呈现于画面主体，单件${product}居中展示，产品轮廓完整不被裁切，${product}材质质感细腻，工艺精湛，商业级产品摄影棚拍风格，高清8K超写实，单件产品完整清晰展示。`;
@@ -1905,7 +1904,7 @@ function startNewWork(){
   if(badge){ badge.textContent = '等待创作'; badge.className = 'preview-badge'; }
   if(pubBtn) pubBtn.style.display = 'none';
 
-  // 隐藏新建创作按钮（生成后再显示）
+  // 隐藏新建/迭代按钮（生成后再显示）
   const nb = document.getElementById('newWorkBtn');
   if(nb) nb.style.display = 'none';
 
