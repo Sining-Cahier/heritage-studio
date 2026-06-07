@@ -1361,7 +1361,7 @@ ${sketchClause}${iterClause}` ;
     });
     const data = await resp.json();
     const result = data?.choices?.[0]?.message?.content?.trim();
-    if(result && !data?.code && result.length > 10) return result + `，这是一张${product}的产品图。`;
+    if(result && !data?.code && result.length > 10) return result;
   }catch(e){ console.warn('[Kimi失败]', e.message); }
   // 失败时本地fallback
   return `${style}非遗文创风格，以${rawEl}为核心视觉主体，${rawEl}形态生动传神，融合${patterns}传统纹样精心点缀，纹样疏密有致覆盖产品表面，配色遵循${style}传统色彩体系，色调典雅，产品实物展示图，${product}完整清晰呈现于画面主体，单件${product}居中展示，产品轮廓完整不被裁切，${product}材质质感细腻，工艺精湛，商业级产品摄影棚拍风格，高清8K超写实，单件产品完整清晰展示。`;
@@ -1434,10 +1434,11 @@ async function doGenerate(){
 
   /* 阶段1：Kimi 一次调用完成提示词 */
   setStage(0, '正在凝练「'+S.style+'」神韵<br>Kimi为您的'+S.product+'量身裁制提示词…', 'Kimi 解读创作意图 · 通常需要10-20秒');
-  const finalPositive = await kimiOncePrompt(
+  const kimiResult = await kimiOncePrompt(
     S.text||'传统图案', S.style||'非遗', S.patterns.join('、')||'传统纹样',
     S.product||'产品', activeParams, S.sketch||null, S.isIterate||false
   );
+  const finalPositive = kimiResult + '这是一张'+(S.product||'产品')+'产品图。';
   console.log('FINAL PROMPT:', finalPositive);
 
   /* 阶段2：开始生图 */
