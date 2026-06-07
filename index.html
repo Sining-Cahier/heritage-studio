@@ -1150,7 +1150,7 @@ function refreshUI(){
 function canGo(){
   if(S.step===1)return S.file||S.text.trim().length>0;
   if(S.step===2)return S.isIterate||S.style!=='';
-  if(S.step===3)return S.patterns.length>0;
+  if(S.step===3)return S.isIterate||S.patterns.length>0;
   if(S.step===4)return S.isIterate||S.product!=='';
   return true;
 }
@@ -1158,8 +1158,9 @@ function goNext(){
   if(!canGo())return;
   if(S.step<6){
     S.step++;
-    // 迭代模式：跳过第2境(流派)和第4境(产品)，已有历史值
+    // 迭代模式：跳过第2境(流派)、第3境(纹样)、第4境(产品)，全部沿用上次
     if(S.isIterate && S.step===2) S.step=3;
+    if(S.isIterate && S.step===3) S.step=4;
     if(S.isIterate && S.step===4) S.step=5;
     refreshUI();refreshSummary();
   }
@@ -1168,6 +1169,7 @@ function goBack(){
   if(S.step>1){
     S.step--;
     if(S.isIterate && S.step===4) S.step=3;
+    if(S.isIterate && S.step===3) S.step=2;
     if(S.isIterate && S.step===2) S.step=1;
     refreshUI();
   }
@@ -1294,36 +1296,52 @@ async function kimiOncePrompt(rawEl, style, patterns, product, activeParams, ske
 
   const salt = Math.random().toString(36).slice(2,7) + Date.now().toString(36).slice(-4);
 
+  // 各非遗流派的核心色彩体系和美学描述（写死在prompt里，不依赖Kimi自由发挥）
+  const styleGuide = {
+    '敦煌纹样': '敦煌壁画风格，色彩浓郁厚重，赭石红、石青、朱砂、土黄、金箔色为主色，矿物质颜料质感，线条粗犷有力，佛教吉祥图案',
+    '非遗蜡染': '贵州蜡染风格，靛蓝与白底形成冰裂纹对比，蓝白两色为主，手工蜡液流动的自然裂纹肌理，朴素雅致民间气息',
+    '非遗剪纸': '中国剪纸风格，大红朱砂为主色，镂空负形构成，线条细腻流畅，喜庆吉祥图案，平面装饰性强',
+    '传统刺绣': '苏绣/湘绣风格，丝线光泽细腻，胭脂红、翡翠绿、宝蓝、鹅黄多色点缀，针脚排列密集工整，图案写实精美',
+    '传统水墨': '中国水墨画风格，墨黑与宣纸米白为主，笔墨浓淡枯湿变化，大量留白，意境深远，文人画气质',
+    '非遗皮影': '陕西皮影风格，黑色镂空轮廓，琥珀棕、朱砂红、金色描边，透光感强，民间戏剧场景感',
+  };
+  const styleCore = styleGuide[style] || style + '非遗传统美学，沿用流派经典配色和工艺特征';
+
+  // 预先计算条件字符串，避免模板字符串内跨行单引号导致语法错误
+  const sketchClause = sketchBase64 && isIterate
+    ? '\n【草图区域指令】按草图严格执行：红色涂抹区域完全保留原有元素不做改动；蓝色涂抹区域替换为新纹样装饰；黄色涂抹区域为需要修改替换的元素，在提示词中明确描述新内容。'
+    : sketchBase64
+      ? '\n【草图布局指令】严格参照草图：红色笔刷标注的是主体物位置，蓝色笔刷标注的是纹样装饰范围，按此布局描述构图。'
+      : '';
+  const iterClause = isIterate
+    ? '\n【迭代连续性】这是基于上一张作品的迭代生成，整体构图和风格保持连续性，重点在局部元素的调整和优化，非全盘重绘。'
+    : '';
+
   const systemText = `你是顶级非遗文创AI图像提示词专家（本轮ID:${salt}）。
 
-【核心任务】输出一段专业的中文图像生成提示词，200-280字，要求信息密度高、细节丰富。
-禁止：任何解释、前言、编号、引号、废话。直接输出提示词正文。
+核心任务：输出一段完整详尽的中文文生图提示词，250-320字，信息密度极高。
+铁律：直接输出提示词正文，零解释、零编号、零废话、不加引号。每次输出必须与前次不同。
 
-【必须包含的六个维度，缺一不可】
+━━ 必须严格体现的六项要素 ━━
 
-① 非遗流派与风格基调（必须写明"${style}"流派的核心美学特征）
-   - 传统强度${activeParams.tradition}/100（${traditionDesc}）
-   - 现代融合${activeParams.modern}/100（${modernDesc}）
+要素一【流派美学】${styleCore}
+传统强度${activeParams.tradition}/100（${traditionDesc}）——低于50则在传统基础上融入现代设计语言；高于80则严格还原历史样式，拒绝任何现代元素。
+现代融合${activeParams.modern}/100（${modernDesc}）——高于70则加入"几何解构/极简线条/扁平色块"等现代词汇。
 
-② 主体物"${rawEl}"的生动描述（姿态/动作/神态/光影细节，本次随机选一个不同角度描绘，禁止平铺直叙）
+要素二【主体物刻画】以"${rawEl}"为画面绝对核心主体，必须生动描绘其具体姿态、动态细节或光影特征（例：振翅欲飞、低头饮水、羽毛栩栩、金光映照等），禁止泛泛而谈"图案"二字。每次随机选不同角度描绘。
 
-③ 纹样装饰（必须出现"${patterns}"，描述其在产品上的分布位置、大小、疏密）
-   - 纹样密度${activeParams.density}/100（${densityDesc}）→ 低则留白为主，高则满铺繁复
+要素三【纹样装饰】"${patterns}"纹样必须明确出现在提示词中，描述其在${product}上的具体位置（边缘/主体/四角/满铺等）和形态特征。
+纹样密度${activeParams.density}/100（${densityDesc}）——严格按密度描述：低则"大面积留白衬托，疏朗呼吸感"，高则"满铺四方连续纹，密不透风繁复华丽"。
 
-④ 色彩配色（基于${style}传统色系，精确描述3-4种主要颜色名称）
-   - 色彩饱和度${activeParams.saturation}/100（${satDesc}）→ 严格体现，低饱和必须写"低饱和哑光""素雅灰调"等词
+要素四【色彩配色】基于${style}流派精确列出3-4个颜色名称（如：赭石红、石青蓝、金箔黄），不得写"传统色彩"等模糊词。
+色彩饱和度${activeParams.saturation}/100（${satDesc}）——严格体现：低于35必须出现"低饱和哑光""素雅灰调""近乎单色"；高于80必须出现"浓烈鲜艳""饱和度极高"。
 
-⑤ 产品材质与质感（"${product}"的具体材质肌理、光泽、工艺细节）
+要素五【产品质感】这是一张${product}的商业产品实物图，${product}是画面唯一主体，不是插画不是装饰画。描述${product}的材质肌理（丝绸光泽/帆布纹理/陶瓷釉面/竹骨折纹等）和立体质感，产品轮廓完整，不被裁切。
 
-⑥ 画面品质（光线、构图氛围、摄影级别描述）
+要素六【画面品质】专业摄影棚布光，光线柔和自然，高清8K商业产品摄影，单件${product}居中完整展示。
 
-${sketchBase64 && isIterate
-  ? '【草图指令】红色区域=完全保留；蓝色区域=新纹样覆盖；黄色区域=替换修改——提示词中逐一说明'
-  : sketchBase64
-    ? '【草图指令】严格按草图中红色（主体位置）和蓝色（纹样区域）安排画面布局'
-    : '【构图】根据产品特点自由设计构图'}
+${sketchClause}${iterClause}` ;
 
-${isIterate ? '【迭代模式】在保持整体构图风格连续性的基础上，仅对标注区域进行局部调整，其余保持一致' : ''}` ;
 
   // 构建消息内容
   const userContent = sketchBase64
@@ -1338,15 +1356,15 @@ ${isIterate ? '【迭代模式】在保持整体构图风格连续性的基础�
       body: JSON.stringify({
         model:'Pro/moonshotai/Kimi-K2.6',
         messages:[{role:'system',content:systemText},{role:'user',content:userContent}],
-        max_tokens:400, temperature:0.92, top_p:0.95
+        max_tokens:700, temperature:0.92, top_p:0.95
       })
     });
     const data = await resp.json();
     const result = data?.choices?.[0]?.message?.content?.trim();
-    if(result && !data?.code && result.length > 10) return result;
+    if(result && !data?.code && result.length > 10) return result + `，这是一张${product}的产品图。`;
   }catch(e){ console.warn('[Kimi失败]', e.message); }
   // 失败时本地fallback
-  return `${style}非遗文创风格，以${rawEl}为核心视觉主体，${rawEl}形态生动传神，融合${patterns}传统纹样精心点缀，纹样疏密有致覆盖产品表面，配色遵循${style}传统色彩体系，色调典雅，设计一张${product}产品图，${product}材质质感细腻，工艺精湛，商业级产品摄影，高清8K细节，单件产品完整清晰展示。`;
+  return `${style}非遗文创风格，以${rawEl}为核心视觉主体，${rawEl}形态生动传神，融合${patterns}传统纹样精心点缀，纹样疏密有致覆盖产品表面，配色遵循${style}传统色彩体系，色调典雅，产品实物展示图，${product}完整清晰呈现于画面主体，单件${product}居中展示，产品轮廓完整不被裁切，${product}材质质感细腻，工艺精湛，商业级产品摄影棚拍风格，高清8K超写实，单件产品完整清晰展示。`;
 }
 
 
@@ -1425,7 +1443,7 @@ async function doGenerate(){
   /* 阶段2：开始生图 */
   setStage(1, '提示词已就绪，天工正在挥毫<br>为您描绘「'+(S.text||'主体物')+'」…', 'Z-Image 图像渲染中 · 通常需要15-25秒');
 
-  const negative = '低质量，模糊，噪点，失真，变形，文字，水印，logo，签名，卡通风格，漫画风，儿童插画，多个产品，重复图案，过度曝光，过度锐化，色彩失真，西方风格，现代抽象，涂鸦，低分辨率，';
+  const negative = '低质量，模糊，噪点，失真，变形，文字，水印，logo，签名，卡通风格，漫画风，儿童插画，多个产品，重复图案，过度曝光，过度锐化，色彩失真，';
 
   /* 第三步：文生图 */
   try{
@@ -1460,7 +1478,7 @@ async function doGenerate(){
       const pb=document.getElementById('pubBtn');if(pb)pb.style.display='flex';
       const ib=document.getElementById('iterBtn');if(ib)ib.style.display='flex';
       showNotify('✓ 作品已成，请欣赏');
-      const chatMsg=layoutDesc?'已为您生成作品，草图布局已被AI读取并融入构图。':'已为您生成「'+S.style+' · '+S.patterns.join('、')+' · '+S.product+'」作品！';
+      const chatMsg=S.sketch?'已为您生成作品，草图布局已被AI读取并融入构图。':'已为您生成「'+S.style+' · '+S.patterns.join('、')+' · '+S.product+'」作品！';
       if(typeof aiSay==='function')aiSay(chatMsg);
     },400);
   }catch(err){
@@ -1525,7 +1543,7 @@ function initSketch(){
   const canvas=document.getElementById('sketchCanvas');
   if(!canvas||sketchCtx)return;
   resizeCanvas();
-  sketchCtx=canvas.getContext('2d');
+  sketchCtx=canvas.getContext('2d',{willReadFrequently:true});
   sketchCtx.lineCap='round';sketchCtx.lineJoin='round';
   canvas.addEventListener('mousedown',e=>{isDrawing=true;sketchDraw(e,canvas,true);});
   canvas.addEventListener('mousemove',e=>{if(isDrawing)sketchDraw(e,canvas,false);});
@@ -1944,9 +1962,12 @@ async function iterateFromResult(){
 
       refreshUI();
       refreshSummary();
+      // 第一境图片已预填，按钮直接可用
+      const bn = document.getElementById('btnNext');
+      if(bn) bn.disabled = false;
 
       // 自动识别主体物（复用图片上传的识别逻辑）
-      aiSay('已将上一张作品作为参考图，Kimi 正在重新识别主体物，您可以在此基础上调整流派和纹样进行迭代创作！');
+      aiSay('已进入迭代模式！上一次的【' + prevStyle + '】流派、【' + prevPatterns.join('·') + '】纹样、【' + prevProduct + '】产品设置全部继承，无需重新选择。\n\n流程将直接跳至「第五境·参数调整」和「第六境·草图布局」，您可以：\n① 修改参数微调风格\n② 用草图标注要修改的区域（黄色=修改，红色=保留，蓝色=新纹样）\n③ 在下方输入框补充文字描述，直接生成迭代版本。');
       try{
         const base64 = dataUrl.split(',')[1];
         const resp2 = await fetch('https://api.siliconflow.cn/v1/chat/completions',{
