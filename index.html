@@ -1346,7 +1346,7 @@ ${isIterate ? '【迭代模式】在保持整体构图风格连续性的基础�
     });
     const data = await resp.json();
     const result = data?.choices?.[0]?.message?.content?.trim();
-    if(result && !data?.code && result.length > 10) return result;
+    if(result && !data?.code && result.length > 10) return result + `，这是一张${product}的产品图。`;
   }catch(e){ console.warn('[Kimi失败]', e.message); }
   // 失败时本地fallback
   return `${style}非遗文创风格，以${rawEl}为核心视觉主体，${rawEl}形态生动传神，融合${patterns}传统纹样精心点缀，纹样疏密有致覆盖产品表面，配色遵循${style}传统色彩体系，色调典雅，产品实物展示图，${product}完整清晰呈现于画面主体，单件${product}居中展示，产品轮廓完整不被裁切，${product}材质质感细腻，工艺精湛，商业级产品摄影棚拍风格，高清8K超写实，单件产品完整清晰展示。`;
